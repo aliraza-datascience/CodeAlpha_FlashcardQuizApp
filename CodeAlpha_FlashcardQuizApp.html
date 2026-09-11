@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Deck — Flashcard Quiz App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#F6F2E9;
+    --ink:#1F2A24;
+    --ink-soft:#4B5750;
+    --card:#FFFFFF;
+    --moss:#5C7A5E;
+    --moss-dark:#3F5A42;
+    --clay:#B5654A;
+    --line:#D9D2C2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 20px 60px;
+  }
+  .top{
+    width:100%;
+    max-width:640px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .deck-count{
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .stage{
+    width:100%;
+    max-width:640px;
+    perspective:1400px;
+  }
+  .card{
+    position:relative;
+    width:100%;
+    height:320px;
+    cursor:pointer;
+  }
+  .card-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition:transform 0.5s cubic-bezier(.4,.2,.2,1);
+    transform-style:preserve-3d;
+  }
+  .card.flipped .card-inner{
+    transform:rotateY(180deg);
+  }
+  .face{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    border-radius:6px;
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:0 1px 2px rgba(31,42,36,0.06);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:40px;
+    text-align:center;
+  }
+  .face .label{
+    position:absolute;
+    top:18px;
+    left:20px;
+    font-size:11px;
+    letter-spacing:0.04em;
+    color:var(--moss);
+    font-weight:600;
+  }
+  .face .text{
+    font-family:'Source Serif 4',serif;
+    font-size:26px;
+    line-height:1.4;
+  }
+  .back{
+    transform:rotateY(180deg);
+    background:var(--moss-dark);
+    color:var(--paper);
+    border:none;
+  }
+  .back .label{color:#BFD3C0;}
+  .hint{
+    margin-top:14px;
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .controls{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin-top:22px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:500;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  button:hover{border-color:var(--moss);}
+  button:focus-visible{outline:2px solid var(--moss); outline-offset:2px;}
+  button.primary{
+    background:var(--moss-dark);
+    color:var(--paper);
+    border-color:var(--moss-dark);
+  }
+  button.primary:hover{background:var(--moss);}
+  .manage{
+    width:100%;
+    max-width:640px;
+    margin-top:48px;
+    border-top:1px solid var(--line);
+    padding-top:28px;
+  }
+  .manage h2{
+    font-family:'Source Serif 4',serif;
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 14px;
+  }
+  .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .row .txt{font-size:14px; flex:1;}
+  .row .txt .q{color:var(--ink); font-weight:500;}
+  .row .txt .a{color:var(--ink-soft); font-size:13px;}
+  .row .acts{display:flex; gap:6px; flex-shrink:0;}
+  .row .acts button{padding:5px 10px; font-size:12px;}
+  .icon-btn.delete{color:var(--clay); border-color:var(--clay);}
+  .icon-btn.delete:hover{background:var(--clay); color:#fff;}
+  form.editor{
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:16px;
+  }
+  form.editor label{font-size:12px; color:var(--ink-soft); font-weight:500;}
+  form.editor input, form.editor textarea{
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    resize:vertical;
+  }
+  form.editor .editor-actions{display:flex; gap:8px; margin-top:4px;}
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <h1>Study Deck</h1>
+    <span class="deck-count" id="deckCount"></span>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="manage">
+    <h2>Cards</h2>
+    <div id="cardList"></div>
+    <button id="addBtn" style="margin-top:14px;">+ Add card</button>
+    <div id="editorSlot"></div>
+  </div>
+
+<script>
+let cards = [
+  {q:"What is the capital of France?", a:"Paris"},
+  {q:"What is the powerhouse of the cell?", a:"The mitochondria"},
+  {q:"What year did the Berlin Wall fall?", a:"1989"},
+];
+let idx = 0;
+let flipped = false;
+let editingId = null;
+
+const stage = document.getElementById('stage');
+const cardList = document.getElementById('cardList');
+const deckCount = document.getElementById('deckCount');
+const editorSlot = document.getElementById('editorSlot');
+
+function renderStage(){
+  if(cards.length === 0){
+    stage.innerHTML = `<div class="empty">No cards yet. Add one below to start studying.</div>`;
+    deckCount.textContent = '';
+    return;
+  }
+  if(idx >= cards.length) idx = 0;
+  const c = cards[idx];
+  deckCount.textContent = `${idx+1} of ${cards.length}`;
+  stage.innerHTML = `
+    <div class="card ${flipped ? 'flipped' : ''}" id="flipCard">
+      <div class="card-inner">
+        <div class="face front">
+          <span class="label">Question</span>
+          <div class="text">${escapeHtml(c.q)}</div>
+        </div>
+        <div class="face back">
+          <span class="label">Answer</span>
+          <div class="text">${escapeHtml(c.a)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Click the card to show the answer</div>
+    <div class="controls">
+      <button id="prevBtn">← Previous</button>
+      <button class="primary" id="flipBtn">${flipped ? 'Show question' : 'Show answer'}</button>
+      <button id="nextBtn">Next →</button>
+    </div>
+  `;
+  document.getElementById('flipCard').addEventListener('click', toggleFlip);
+  document.getElementById('flipBtn').addEventListener('click', (e)=>{e.stopPropagation(); toggleFlip();});
+  document.getElementById('prevBtn').addEventListener('click', ()=>{go(-1);});
+  document.getElementById('nextBtn').addEventListener('click', ()=>{go(1);});
+}
+
+function toggleFlip(){
+  flipped = !flipped;
+  renderStage();
+}
+
+function go(dir){
+  if(cards.length === 0) return;
+  idx = (idx + dir + cards.length) % cards.length;
+  flipped = false;
+  renderStage();
+}
+
+function renderList(){
+  if(cards.length === 0){
+    cardList.innerHTML = '';
+  } else {
+    cardList.innerHTML = cards.map((c,i)=>`
+      <div class="row">
+        <div class="txt">
+          <div class="q">${escapeHtml(c.q)}</div>
+          <div class="a">${escapeHtml(c.a)}</div>
+        </div>
+        <div class="acts">
+          <button class="icon-btn" data-edit="${i}">Edit</button>
+          <button class="icon-btn delete" data-del="${i}">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    cardList.querySelectorAll('[data-edit]').forEach(b=>{
+      b.addEventListener('click', ()=>openEditor(parseInt(b.dataset.edit)));
+    });
+    cardList.querySelectorAll('[data-del]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const i = parseInt(b.dataset.del);
+        cards.splice(i,1);
+        if(idx>=cards.length) idx=Math.max(0,cards.length-1);
+        flipped=false;
+        renderAll();
+      });
+    });
+  }
+}
+
+function openEditor(i){
+  editingId = i;
+  const existing = i !== null ? cards[i] : {q:'', a:''};
+  editorSlot.innerHTML = `
+    <form class="editor" id="editorForm">
+      <label>Question</label>
+      <textarea rows="2" id="qInput" required>${existing ? escapeHtml(existing.q) : ''}</textarea>
+      <label>Answer</label>
+      <textarea rows="2" id="aInput" required>${existing ? escapeHtml(existing.a) : ''}</textarea>
+      <div class="editor-actions">
+        <button type="submit" class="primary">${i !== null && cards[i] ? 'Save changes' : 'Add card'}</button>
+        <button type="button" id="cancelEdit">Cancel</button>
+      </div>
+    </form>
+  `;
+  document.getElementById('cancelEdit').addEventListener('click', closeEditor);
+  document.getElementById('editorForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const q = document.getElementById('qInput').value.trim();
+    const a = document.getElementById('aInput').value.trim();
+    if(!q || !a) return;
+    if(i !== null && cards[i]){
+      cards[i] = {q,a};
+    } else {
+      cards.push({q,a});
+    }
+    closeEditor();
+    renderAll();
+  });
+}
+
+function closeEditor(){
+  editingId = null;
+  editorSlot.innerHTML = '';
+}
+
+document.getElementById('addBtn').addEventListener('click', ()=>openEditor(null));
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderAll(){
+  renderStage();
+  renderList();
+}
+
+renderAll();
+</script>
+</body>
+</html>
